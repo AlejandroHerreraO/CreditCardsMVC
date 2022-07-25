@@ -1,0 +1,184 @@
+﻿@model TarjetasMVC.Models.Data
+
+@{
+    ViewBag.Title = "Index";
+
+}
+
+<link href="@Url.Content("~/Content/Site.css")" rel="stylesheet" type="text/css" />
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+
+<body>
+    <div class="container">
+        <h2>Credit Cards</h2>
+
+        
+
+        <fieldset>
+            <table>
+                <tr>
+                    <td>
+                        <label>Customers:</label>
+                    </td>
+                    <td>
+                        <select id="CustomerId" name="customer">
+                            <option value="-1"></option>
+                            @foreach (var item in Model.customerList) {
+                                <option value=@item.CustomerID.ToString()>@item.CustomerName</option>
+                            }
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Credit Cards:</label>
+                    </td>
+                    <td>
+                        <select id="Cards" name="card">
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Credit Card Number</label>
+                    </td>
+                    <td>
+                        <label id="CardNumber"></label>
+                    </td>
+                </tr>
+                <tr style="display: none;">
+                    <td>
+                        <label>Credit Card Type</label>
+                    </td>
+                    <td>
+                        <label id="CardType"></label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Credit Card Balance</label>
+                    </td>
+                    <td>
+                        <label id="CardBalance"></label>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Credit Card Limit</label>
+                    </td>
+                    <td>
+                        <label id="CardLimit"></label>
+                    </td>
+                </tr>
+                <tr>
+                </tr>
+                <tr>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Amount to Charge: </label>
+                    </td>
+                    <td>
+                        @Html.TextBoxFor(model => model.Amount, new { id = "AmountInput", disabled = "disabled" })
+                    </td>
+
+                </tr>
+
+                <tr>
+                </tr>
+            </table>
+            <label id="Result"></label>
+
+
+
+        </fieldset>
+
+            <p>
+                <input id="ChargeSubmit" type="submit" value="Charge"  disabled="disabled" onclick="charge()"/>
+            </p>
+
+        <!-- JS includes -->
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+        <script src="//ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.min.js"></script>
+        <script src="//ajax.aspnetcdn.com/ajax/mvc/4.0/jquery.validate.unobtrusive.min.js"></script>
+        <script>
+			// jquery
+            $("#CustomerId").on("change", function(){
+				showCards($(this).val());
+            })
+
+            $("#Cards").on("change", function () {
+                showInfo($(this).val());
+            })
+
+			function showCards(val)
+			{
+			    console.log(val);
+                $("#Cards").empty();
+                showInfo("");
+			    $.getJSON('@Url.Action("GetDropdownList", "Home")' + "?value=" + val, function (result) {
+			            var data = result.data;
+			            for (var i = 0; i < data.length; i++) {
+                            $("#Cards").append("<option>" + data[i] + "</option>", data[i]);
+                            console.log(data[i]);
+                    }
+				})
+            }
+
+            function showInfo(val) {
+                $("#CardNumber").text('');
+                $("#CardType").text('');
+                $("#CardBalance").text('');
+                $("#CardLimit").text('');
+                $("#AmountInput").attr("disabled", "disabled");
+                $("#ChargeSubmit").attr("disabled", "disabled");
+                $.getJSON('@Url.Action("GetCardInfo", "Home")' + "?value=" + val, function (result) {
+                    var data = result.data;
+                    $("#CardNumber").text(data[0]);
+                    $("#CardType").text(data[1]);
+                    $("#CardBalance").text(data[2]);
+                    $("#CardLimit").text(data[3]);
+                    if (data[4] == "valid") {
+                        $("#CardNumber").css("background-color", "white");
+                        $("#AmountInput").removeAttr("disabled");
+                        $("#ChargeSubmit").removeAttr("disabled");
+                    }
+                    else
+                        $("#CardNumber").css("background-color", "red");
+                })
+            }
+
+            function charge() {
+                var number = $("#CardNumber").text()
+                var amount = parseInt($("#AmountInput").val());
+                var balance = parseInt($("#CardBalance").text());
+                var limit = parseInt($("#CardLimit").text());
+
+                if (amount > limit - balance)
+                    $("#Result").text("Balance can't exceed the credit limit!");
+                else
+                    $.getJSON('@Url.Action("UpdateValues", "Home")', { cardNumber: number, amountAdded: amount}, function (result) {
+
+                        $("#Result").text('Updated!');
+                        var data = result.data;
+                        $("#CardNumber").text(data[0]);
+                        $("#CardType").text(data[1]);
+                        $("#CardBalance").text(data[2]);
+                        $("#CardLimit").text(data[3]);
+                    
+				})
+
+            }
+
+        </script>
+
+</body>
+</html>
